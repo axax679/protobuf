@@ -773,6 +773,8 @@ static_assert(PROTOBUF_ABSL_MIN(20230125, 3),
 //   for (int i = 0; i < public_dep->message_type_count(); ++i)
 #pragma clang diagnostic ignored "-Wshadow"
 #pragma clang diagnostic ignored "-Wextra-semi"
+// For testing b/279752269 (turned off internally during migration b/383569842)
+#pragma clang diagnostic error "-Wnullability-completeness"
 #endif
 #ifdef __GNUC__
 #pragma GCC diagnostic push
