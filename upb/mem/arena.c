@@ -65,7 +65,7 @@ typedef struct upb_ArenaInternal {
   upb_MemBlock* blocks;
 
   // Total space allocated in blocks, atomic only for SpaceAllocated
-  UPB_ATOMIC(size_t) space_allocated;
+  UPB_ATOMIC(uintptr_t) space_allocated;
 } upb_ArenaInternal;
 
 // All public + private state for an arena.
@@ -204,11 +204,16 @@ static upb_ArenaRoot _upb_Arena_FindRoot(const upb_Arena* a) {
 
 size_t upb_Arena_SpaceAllocated(upb_Arena* arena, size_t* fused_count) {
   upb_ArenaInternal* ai = _upb_Arena_FindRoot(arena).root;
-  size_t memsize = 0;
+  uintptr_t memsize = 0;
   size_t local_fused_count = 0;
 
   while (ai != NULL) {
-    memsize += upb_Atomic_Load(&ai->space_allocated, memory_order_relaxed);
+    // Unfortunate macro behavior; prior to C11 when using nonstandard atomics
+    // this returns a void* and can't be used with += without an intermediate
+    // conversion to an integer.
+    uintptr_t allocated =
+        upb_Atomic_Load(&ai->space_allocated, memory_order_relaxed);
+    memsize += allocated;
     ai = upb_Atomic_Load(&ai->next, memory_order_relaxed);
     local_fused_count++;
   }
@@ -273,7 +278,7 @@ static bool _upb_Arena_AllocBlock(upb_Arena* a, size_t size) {
   // Atomic add not required here, as threads won't race allocating blocks, plus
   // atomic fetch-add is slower than load/add/store on arm devices compiled
   // targetting pre-v8.1.
-  size_t old_space_allocated =
+  uintptr_t old_space_allocated =
       upb_Atomic_Load(&ai->space_allocated, memory_order_relaxed);
   upb_Atomic_Store(&ai->space_allocated, old_space_allocated + block_size,
                    memory_order_relaxed);
