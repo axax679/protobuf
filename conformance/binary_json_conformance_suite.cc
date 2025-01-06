@@ -3524,6 +3524,27 @@ void BinaryAndJsonConformanceSuiteImpl<MessageType>::RunJsonTestsForAny() {
     }
   }
       )");
+  ExpectParseFailureForJson("AnyWktRepresentationWithEmptyTypeAndValue",
+                            REQUIRED,
+                            R"({
+        "optionalAny": {
+          "@type": "",
+          "value": ""
+        }
+      })");
+  RunValidJsonTest("AnyWithNoType", REQUIRED,
+                   R"({
+        "optionalAny": {}
+      })",
+                   R"(
+        optional_any: {}
+      )");
+  RunValidJsonTest("AnyNull", REQUIRED,
+                   R"({
+        "optionalAny": null
+      })",
+                   R"(
+      )");
 }
 
 template <typename MessageType>
